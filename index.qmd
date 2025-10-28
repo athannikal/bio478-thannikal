@@ -1,0 +1,30 @@
+---
+title: "Lab S3 - “Connecting a Github repo site with a new RStudio project”"
+author: "Ashwarya Thannikal"
+format: 
+  html: 
+    toc: true
+    toc_float: true
+    embed-resources: true
+    theme: sandstone
+editor: visual
+execute:
+  warning: false
+  message: false
+---
+## About Me
+
+My name is Ashwarya Thannikal and I am a junior biology major at UMass Amherst.
+
+## Human Genome Image
+
+[Human Genome](human_genome.png)
+
+
+## Link to Lab 7
+
+[Lab 7](Lab7_AshwaryaThannikal.html)
+
+
+
+
