@@ -15,7 +15,7 @@ execute:
 
 ## About Me
 
-My name is Ashwarya Thannikal and I am a junior biology major at UMass Amherst.
+My name is Ashwarya Thannikal and I am a biology major at UMass Amherst.
 
 ## Human Genome Image
 
