@@ -1,0 +1,186 @@
+---
+title: "Lab 13 - Creating a detailed report with explanations from the NEON MAG data"
+author: "Ashwarya Thannikal"
+format: 
+  html: 
+    toc: true
+    toc_float: true
+    embed-resources: true
+    theme: sandstone
+editor: visual
+execute:
+  warning: false
+  message: false
+---
+```{r}
+.libPaths(c("/home/athannikal_umass_edu/R/x86_64-pc-linux-gnu-library/4.5", "/usr/local/lib/R/site-library", "/usr/local/lib/R/library"))
+```
+
+## Introduction
+This report provides a comprehensive Community Composition & Diversity analysis of NEON MAGs by siteID. 
+
+## 1. Load libraries and data
+
+Explanation: We load essential R packages and then read the dataset and check that key columns exist.
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(vegan)
+library(ggplot2)
+library(ape)
+```
+
+```{r}
+# Load your dataset
+soil_data <- read.csv("NEON_soilMAGs_soilChem.csv")
+
+# Check required columns
+if(!all(c("siteID","bin_id","phylum") %in% colnames(soil_data))){
+  stop("Required columns siteID, bin_id, phylum are missing in the dataset.")
+}
+```
+
+## 2. Taxonomic Profiling
+
+Explanation: We summarize the relative abundance of microbial taxa (e.g., phyla) across sites:
+
+Group by siteID and phylum.
+Calculate relative abundance within each site.
+Visualize as a stacked bar chart showing taxonomic composition per site.
+
+Purpose: Understand which microbial groups dominate at different locations.
+
+```{r}
+# Summarize relative abundances of phyla across sites
+taxa_summary <- soil_data %>%
+  group_by(siteID, phylum) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(siteID) %>%
+  mutate(rel_abundance = count / sum(count))
+
+# Plot phylum composition across sites
+tax_plot <- ggplot(taxa_summary, aes(x = siteID, y = rel_abundance, fill = phylum)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Taxonomic Composition by Site", x = "Site", y = "Relative Abundance") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+print(tax_plot)
+```
+
+## 3. Alpha Diversity
+
+Explanation: We compute diversity within each site:
+
+Shannon Index (accounts for richness and evenness).
+Simpson Index (dominance measure).
+Richness (number of unique taxa).
+
+Visualized as a bar chart of Shannon diversity per site.
+
+Purpose: Assess how diverse each site’s microbial community is.
+
+```{r}
+# Create community matrix
+comm_matrix <- soil_data %>%
+  group_by(siteID, bin_id) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  pivot_wider(names_from = bin_id, values_from = count, values_fill = 0)
+
+# Compute diversity metrics
+shannon <- diversity(as.matrix(comm_matrix[,-1]), index = "shannon")
+simpson <- diversity(as.matrix(comm_matrix[,-1]), index = "simpson")
+richness <- rowSums(comm_matrix[,-1] > 0)
+
+alpha_df <- data.frame(siteID = comm_matrix$siteID, Shannon = shannon, Simpson = simpson, Richness = richness)
+
+# Plot Shannon diversity
+alpha_plot <- ggplot(alpha_df, aes(x = siteID, y = Shannon)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  theme_minimal() +
+  labs(title = "Alpha Diversity (Shannon Index)", x = "Site", y = "Shannon") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(alpha_plot)
+```
+
+## 4. Beta Diversity
+
+Explanation: We measure differences between sites using Bray-Curtis dissimilarity:
+
+Perform NMDS ordination to reduce dimensionality.
+Plot sites in ordination space (closer points = more similar communities).
+Provide both static ggplot and interactive plotly versions.
+
+Purpose: Reveal patterns of community similarity across sites.
+
+```{r}
+# Compute Bray-Curtis dissimilarity
+bray_dist <- vegdist(as.matrix(comm_matrix[,-1]), method = "bray")
+
+# NMDS ordination
+nmds <- metaMDS(as.matrix(comm_matrix[,-1]), distance = "bray", k = 2, trymax = 100)
+nmds_points <- as.data.frame(nmds$points)
+nmds_points$siteID <- rownames(nmds_points)
+
+# Static NMDS plot
+nmds_plot <- ggplot(nmds_points, aes(x = MDS1, y = MDS2, text = siteID)) +
+  geom_point(color = "darkgreen", size = 3) +
+  theme_minimal() +
+  labs(title = "NMDS Ordination (Bray-Curtis)", x = "Axis 1", y = "Axis 2")
+
+print(nmds_plot)
+
+# Interactive NMDS plot
+nmds_interactive <- ggplotly(nmds_plot, tooltip = "text")
+nmds_interactive
+```
+
+## 5. PCoA
+
+Explanation: We run Principal Coordinates Analysis (PCoA) on the same Bray-Curtis matrix:
+
+Extract first two axes.
+Plot sites in ordination space.
+Provide static and interactive plots.
+
+Purpose: Complement NMDS with another ordination method for robustness.
+
+```{r}
+# PCoA using Bray-Curtis
+pcoa_result <- ape::pcoa(bray_dist)
+pcoa_df <- data.frame(Axis1 = pcoa_result$vectors[,1], Axis2 = pcoa_result$vectors[,2], siteID = rownames(pcoa_result$vectors))
+
+# Static PCoA plot
+pcoa_plot <- ggplot(pcoa_df, aes(x = Axis1, y = Axis2, text = siteID)) +
+  geom_point(color = "purple", size = 3) +
+  theme_minimal() +
+  labs(title = "PCoA Ordination (Bray-Curtis)", x = "Axis 1", y = "Axis 2")
+
+print(pcoa_plot)
+
+# Interactive PCoA plot
+pcoa_interactive <- ggplotly(pcoa_plot, tooltip = "text")
+pcoa_interactive
+```
+
+## Conclusion
+This analysis provides a comprehensive overview of microbial community structure across sites by integrating taxonomic profiling, alpha diversity, beta diversity, and ordination techniques. Taxonomic composition plots reveal differences in dominant phyla among locations, while alpha diversity metrics such as Shannon, Simpson, and richness highlight variability in community complexity within sites. Beta diversity analyses using Bray-Curtis dissimilarity, visualized through NMDS and PCoA ordinations, demonstrate clear patterns of similarity and dissimilarity between sites, suggesting underlying environmental or spatial drivers. Interactive visualizations further enhance interpretability, allowing dynamic exploration of site-level differences. Overall, these results indicate that microbial communities vary significantly in both composition and diversity across sites, providing a strong foundation for linking these patterns to environmental factors such as soil chemistry and geographic gradients.
+
+## Key Insights
+Taxonomic Composition: Microbial communities differ substantially across sites, with certain phyla dominating specific locations, indicating ecological specialization.
+
+Alpha Diversity: Shannon and Simpson indices reveal variability in community complexity, with some sites hosting highly diverse and balanced communities while others are dominated by fewer taxa.
+
+Beta Diversity: NMDS and PCoA ordinations based on Bray-Curtis dissimilarity show clear clustering patterns, suggesting that geographic or environmental gradients influence community composition.
+
+Interactive Exploration: Plotly-based interactive ordination plots allow dynamic investigation of site-level differences, enhancing interpretability and enabling deeper insights.
+
+Overall Pattern: Microbial diversity and composition are not uniform across sites, highlighting the importance of spatial and environmental factors in shaping microbial ecosystems.
+
+
+
+
+
+
