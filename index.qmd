@@ -17,7 +17,7 @@ execute:
 
 My name is Ashwarya Thannikal and I am a biology major at UMass Amherst.
 
-## Human Genome Image
+## Image
 
 [Human Genome](human_genome.png)
 
