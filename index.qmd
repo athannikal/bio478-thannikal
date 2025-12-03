@@ -12,6 +12,7 @@ execute:
   warning: false
   message: false
 ---
+
 ## About Me
 
 My name is Ashwarya Thannikal and I am a junior biology major at UMass Amherst.
@@ -20,11 +21,8 @@ My name is Ashwarya Thannikal and I am a junior biology major at UMass Amherst.
 
 [Human Genome](human_genome.png)
 
-
-## Link to Lab 7
+## Labs
 
 [Lab 7](Lab7_AshwaryaThannikal.html)
 
-
-
-
+[Lab 13](Lab13_AshwaryaThannikal.html)
